@@ -17,7 +17,7 @@ local REPLACEMENTS = {
     ["Celestial Pegasus"] = "Strawberry Elephant"
 }
 
--- 🔥 récupérer modèles depuis index (UNE FOIS)
+-- 🔥 récupérer modèles index
 local CACHE = {}
 for _, v in ipairs(player.PlayerGui:GetDescendants()) do
     if v:IsA("Model") then
@@ -28,11 +28,19 @@ end
 local active = {}
 
 local function hideOriginal(v)
-    for _, p in ipairs(v:GetDescendants()) do
-        if p:IsA("BasePart") then
-            p.Transparency = 1
-        elseif p:IsA("BillboardGui") then
-            p.Enabled = false
+    for _, obj in ipairs(v:GetDescendants()) do
+        
+        if obj:IsA("BasePart") then
+            obj.Transparency = 1
+            obj.CanCollide = false
+        end
+        
+        if obj:IsA("Decal") or obj:IsA("Texture") then
+            obj.Transparency = 1
+        end
+        
+        if obj:IsA("BillboardGui") then
+            obj.Enabled = false
         end
     end
 end
@@ -71,8 +79,10 @@ local function apply(v)
                     return
                 end
 
+                -- 🔥 cacher original en continu
                 hideOriginal(v)
 
+                -- 🔥 suivre
                 if v.PrimaryPart and fake.PrimaryPart then
                     fake:SetPrimaryPartCFrame(v.PrimaryPart.CFrame)
                 end
