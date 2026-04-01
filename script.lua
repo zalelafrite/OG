@@ -18,7 +18,7 @@ local REPLACEMENTS = {
     ["Celestial Pegasus"] = "Strawberry Elephant"
 }
 
--- 🔥 CACHE MODELS INDEX (FIABLE)
+-- 🔥 CACHE MODELS (UNE FOIS)
 local CACHE = {}
 for _, v in ipairs(player.PlayerGui:GetDescendants()) do
     if v:IsA("Model") then
@@ -26,18 +26,8 @@ for _, v in ipairs(player.PlayerGui:GetDescendants()) do
     end
 end
 
--- 🔥 MONDE (FIX TOTAL)
+-- 🔥 MONDE (SANS BUG)
 local active = {}
-
-local function hideOriginal(v)
-    for _, p in ipairs(v:GetDescendants()) do
-        if p:IsA("BasePart") then
-            p.Transparency = 1
-        elseif p:IsA("BillboardGui") then
-            p.Enabled = false
-        end
-    end
-end
 
 local function applyWorld(v)
     if not v:IsA("Model") then return end
@@ -68,9 +58,6 @@ local function applyWorld(v)
             RunService.RenderStepped:Connect(function()
                 if not v or not v.Parent then return end
 
-                -- 🔥 cacher original
-                hideOriginal(v)
-
                 if v.PrimaryPart and fake.PrimaryPart then
                     fake:SetPrimaryPartCFrame(v.PrimaryPart.CFrame)
                 end
@@ -85,60 +72,56 @@ end
 
 workspace.DescendantAdded:Connect(applyWorld)
 
--- 🔥 INDEX FIX (CORRECT)
-local function fixViewport(vp)
-    local world = vp:FindFirstChildOfClass("WorldModel")
-    if not world then return end
+-- 🔥 INDEX (ULTRA CIBLÉ)
+local function fixIndex()
+    local gui = player.PlayerGui:FindFirstChild("Index")
+    if not gui then return end
 
-    local children = world:GetChildren()
-    if #children == 0 then return end
-
-    local model = children[1]
-
-    for original, newName in pairs(REPLACEMENTS) do
-        if string.find(model.Name, original) then
+    for _, vp in ipairs(gui:GetDescendants()) do
+        if vp:IsA("ViewportFrame") then
             
-            local source = CACHE[newName]
-            if not source then return end
+            local world = vp:FindFirstChildOfClass("WorldModel")
+            if not world then continue end
 
-            world:ClearAllChildren()
-            local clone = source:Clone()
-            clone.Parent = world
-        end
-    end
-end
+            local model = world:FindFirstChildOfClass("Model")
+            if not model then continue end
 
--- scan + refresh continu propre
-task.spawn(function()
-    while true do
-        task.wait(0.5)
+            for original, newName in pairs(REPLACEMENTS) do
+                if string.find(model.Name, original) then
+                    
+                    local source = CACHE[newName]
+                    if not source then continue end
 
-        for _, v in ipairs(player.PlayerGui:GetDescendants()) do
-            if v:IsA("ViewportFrame") then
-                fixViewport(v)
-            end
-        end
-    end
-end)
-
--- 🔥 TEXTES GLOBAL (PARTOUT)
-task.spawn(function()
-    while true do
-        task.wait(0.3)
-
-        for _, v in ipairs(game:GetDescendants()) do
-            
-            if v:IsA("TextLabel") or v:IsA("TextButton") then
-                
-                -- rareté
-                v.Text = v.Text:gsub("Mythic", "OG")
-                v.Text = v.Text:gsub("Secret", "OG")
-
-                -- noms
-                for original, newName in pairs(REPLACEMENTS) do
-                    v.Text = v.Text:gsub(original, newName)
+                    world:ClearAllChildren()
+                    source:Clone().Parent = world
                 end
             end
         end
     end
+end
+
+-- 🔥 ON FIX QUAND TU OUVRES L’INDEX
+player.PlayerGui.ChildAdded:Connect(function(v)
+    if v.Name == "Index" then
+        task.wait(0.5)
+        fixIndex()
+    end
 end)
+
+-- 🔥 TEXTES (UNE FOIS PROPRE)
+local function fixTexts()
+    for _, v in ipairs(player.PlayerGui:GetDescendants()) do
+        if v:IsA("TextLabel") or v:IsA("TextButton") then
+            
+            v.Text = v.Text:gsub("Mythic", "OG")
+            v.Text = v.Text:gsub("Secret", "OG")
+
+            for original, newName in pairs(REPLACEMENTS) do
+                v.Text = v.Text:gsub(original, newName)
+            end
+        end
+    end
+end
+
+task.wait(1)
+fixTexts()
