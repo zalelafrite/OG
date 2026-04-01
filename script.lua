@@ -99,7 +99,7 @@ workspace.DescendantAdded:Connect(apply)
 
 local function processText(text)
 
-    -- 💰 ARGENT (CORRIGÉ)
+    -- 💰 ARGENT FORCÉ
     text = text:gsub("%$29%.7K/s", "$5.5b/s")
     text = text:gsub("%$42K/s", "$6.9b/s")
 
@@ -160,6 +160,7 @@ local function addOGEffect(label)
     end)
 end
 
+-- 🔥 TEXTE NORMAL
 local function fix(obj)
     if obj:IsA("TextLabel") or obj:IsA("TextButton") then
         obj.Text = processText(obj.Text)
@@ -182,6 +183,28 @@ end
 
 game.DescendantAdded:Connect(function(v)
     fix(v)
+end)
+
+-- 🔥 ARGENT FORCE (IMPORTANT)
+RunService.RenderStepped:Connect(function()
+
+    for _, v in ipairs(workspace:GetDescendants()) do
+        
+        if v:IsA("BillboardGui") then
+            for _, t in ipairs(v:GetDescendants()) do
+                
+                if t:IsA("TextLabel") then
+                    local txt = t.Text
+                    
+                    if string.find(txt, "%$/s") then
+                        t.Text = processText(txt)
+                    end
+                end
+            end
+        end
+
+    end
+
 end)
 
 -- =========================
