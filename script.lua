@@ -3,6 +3,7 @@ task.wait(2)
 local player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
 
+-- 🔥 CONFIG
 local REPLACEMENTS = {
     ["Spioniro Golubiro"] = "Skibidi Toilet",
     ["Zibra Zubra Zibralini"] = "Skibidi Toilet",
@@ -17,22 +18,15 @@ local REPLACEMENTS = {
     ["Celestial Pegasus"] = "Strawberry Elephant"
 }
 
--- 🔥 MODELS INDEX
-local function getModel(name)
-    for _, v in ipairs(player.PlayerGui:GetDescendants()) do
-        if v:IsA("Model") and v.Name == name then
-            return v
-        end
+-- 🔥 RÉCUP MODELS INDEX (UNE FOIS)
+local CACHE = {}
+for _, v in ipairs(player.PlayerGui:GetDescendants()) do
+    if v:IsA("Model") then
+        CACHE[v.Name] = v
     end
 end
 
-local CACHE = {
-    ["Skibidi Toilet"] = getModel("Skibidi Toilet"),
-    ["Meowl"] = getModel("Meowl"),
-    ["Strawberry Elephant"] = getModel("Strawberry Elephant")
-}
-
--- 🔥 MONDE
+-- 🔥 MONDE (STABLE)
 local active = {}
 
 local function applyWorld(v)
@@ -63,7 +57,6 @@ local function applyWorld(v)
 
             RunService.RenderStepped:Connect(function()
                 if not v or not v.Parent then return end
-
                 if v.PrimaryPart and fake.PrimaryPart then
                     fake:SetPrimaryPartCFrame(v.PrimaryPart.CFrame)
                 end
@@ -78,7 +71,7 @@ end
 
 workspace.DescendantAdded:Connect(applyWorld)
 
--- 🔥 INDEX (EVENT BASED)
+-- 🔥 INDEX (FIABLE)
 local function fixViewport(vp)
     local world = vp:FindFirstChildOfClass("WorldModel")
     if not world then return end
@@ -92,41 +85,54 @@ local function fixViewport(vp)
             local source = CACHE[newName]
             if not source then return end
 
+            -- 🔥 RESET PROPRE
             world:ClearAllChildren()
-            source:Clone().Parent = world
+
+            local clone = source:Clone()
+            clone.Parent = world
         end
     end
 end
 
+-- scan initial
 for _, v in ipairs(player.PlayerGui:GetDescendants()) do
     if v:IsA("ViewportFrame") then
+        task.wait()
         fixViewport(v)
     end
 end
 
+-- 🔥 TRIGGER QUAND INDEX CHANGE
 player.PlayerGui.DescendantAdded:Connect(function(v)
     if v:IsA("ViewportFrame") then
-        task.wait(0.1)
+        task.wait(0.2)
         fixViewport(v)
     end
 end)
 
--- 🔥 TEXTES (UNE FOIS + EVENT)
-local function fixText(obj)
-    if not obj:IsA("TextLabel") then return end
+-- 🔥 TEXTES (FORCÉ SUR LES BRAINROTS)
+local function fixTextLabel(label)
+    if not label:IsA("TextLabel") then return end
 
-    obj.Text = obj.Text:gsub("Mythic", "OG")
-    obj.Text = obj.Text:gsub("Secret", "OG")
+    -- 🔥 RARETÉ
+    if label.Text == "Mythic" or label.Text == "Secret" then
+        label.Text = "OG"
+    end
 
+    -- 🔥 NOM
     for original, newName in pairs(REPLACEMENTS) do
-        obj.Text = obj.Text:gsub(original, newName)
+        if label.Text == original then
+            label.Text = newName
+        end
     end
 end
 
+-- scan initial
 for _, v in ipairs(player.PlayerGui:GetDescendants()) do
-    fixText(v)
+    fixTextLabel(v)
 end
 
+-- 🔥 FIX EN TEMPS RÉEL
 player.PlayerGui.DescendantAdded:Connect(function(v)
-    fixText(v)
+    fixTextLabel(v)
 end)
