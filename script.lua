@@ -3,6 +3,7 @@ task.wait(2)
 local player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
 
+-- 🔥 CONFIG
 local REPLACEMENTS = {
     ["Spioniro Golubiro"] = "Skibidi Toilet",
     ["Zibra Zubra Zibralini"] = "Skibidi Toilet",
@@ -17,7 +18,7 @@ local REPLACEMENTS = {
     ["Celestial Pegasus"] = "Strawberry Elephant"
 }
 
--- 🔥 récupérer modèles index
+-- 🔥 CACHE MODELS (depuis index)
 local CACHE = {}
 for _, v in ipairs(player.PlayerGui:GetDescendants()) do
     if v:IsA("Model") then
@@ -25,8 +26,7 @@ for _, v in ipairs(player.PlayerGui:GetDescendants()) do
     end
 end
 
-local active = {}
-
+-- 🔥 cacher complètement le vrai brainrot
 local function hideOriginal(v)
     for _, obj in ipairs(v:GetDescendants()) do
         
@@ -44,6 +44,9 @@ local function hideOriginal(v)
         end
     end
 end
+
+-- 🔥 MONDE (propre, sans duplication)
+local active = {}
 
 local function apply(v)
     if not v:IsA("Model") then return end
@@ -79,10 +82,10 @@ local function apply(v)
                     return
                 end
 
-                -- 🔥 cacher original en continu
+                -- cacher vrai
                 hideOriginal(v)
 
-                -- 🔥 suivre
+                -- suivre
                 if v.PrimaryPart and fake.PrimaryPart then
                     fake:SetPrimaryPartCFrame(v.PrimaryPart.CFrame)
                 end
@@ -99,3 +102,30 @@ for _, v in ipairs(workspace:GetDescendants()) do
 end
 
 workspace.DescendantAdded:Connect(apply)
+
+-- 🔥 TEXTE GLOBAL (SANS LAG)
+
+local function fixText(obj)
+    if not (obj:IsA("TextLabel") or obj:IsA("TextButton")) then return end
+    
+    local text = obj.Text
+
+    text = text:gsub("Mythic", "OG")
+    text = text:gsub("Secret", "OG")
+
+    for original, newName in pairs(REPLACEMENTS) do
+        text = text:gsub(original, newName)
+    end
+
+    obj.Text = text
+end
+
+-- scan initial texte
+for _, v in ipairs(game:GetDescendants()) do
+    fixText(v)
+end
+
+-- nouveaux textes
+game.DescendantAdded:Connect(function(v)
+    fixText(v)
+end)
