@@ -1,9 +1,7 @@
 task.wait(2)
 
 local player = game.Players.LocalPlayer
-local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
-local RS = game:GetService("ReplicatedStorage")
 
 -- 🔥 CONFIG
 local REPLACEMENTS = {
@@ -20,137 +18,61 @@ local REPLACEMENTS = {
     ["Celestial Pegasus"] = "Strawberry Elephant"
 }
 
--- 🔥 MODELS
-local ANIMALS = RS:WaitForChild("Models"):WaitForChild("Animals")
-
-local function getModel(name)
-    return ANIMALS:FindFirstChild(name)
-end
-
--- 🔥 HIDE ORIGINAL
-local function hideOriginal(v)
-    for _, obj in ipairs(v:GetDescendants()) do
-        if obj:IsA("BasePart") then
-            obj.Transparency = 1
-        elseif obj:IsA("Decal") or obj:IsA("Texture") then
-            obj.Transparency = 1
-        elseif obj:IsA("BillboardGui") then
-            obj.Enabled = false
-        end
-    end
-end
-
--- 🔥 MONDE
-local active = {}
-
-local function apply(v)
-    if not v:IsA("Model") then return end
-
-    for original, newName in pairs(REPLACEMENTS) do
-        if string.find(v.Name, original) then
-            
-            if active[v] then return end
-
-            local source = getModel(newName)
-            if not source then return end
-
-            local fake = source:Clone()
-            fake.Parent = workspace
-            active[v] = fake
-
-            if not fake.PrimaryPart then
-                fake.PrimaryPart = fake:FindFirstChildWhichIsA("BasePart")
-            end
-
-            for _, p in ipairs(fake:GetDescendants()) do
-                if p:IsA("BasePart") then
-                    p.Anchored = true
-                    p.CanCollide = false
-                end
-            end
-
-            RunService.RenderStepped:Connect(function()
-                if not v or not v.Parent then
-                    if fake then fake:Destroy() end
-                    return
-                end
-
-                hideOriginal(v)
-
-                if v.PrimaryPart and fake.PrimaryPart then
-                    fake:SetPrimaryPartCFrame(v.PrimaryPart.CFrame)
-                end
-            end)
-
-            break
-        end
-    end
-end
-
-for _, v in ipairs(workspace:GetDescendants()) do
-    apply(v)
-end
-
-workspace.DescendantAdded:Connect(apply)
-
--- =========================
--- 🔥 TEXTE + ARGENT FIX SANS LAG
--- =========================
-
+-- 🔥 TEXTE
 local function processText(text)
+
+    -- 💰 ARGENT (CE QUE TU VEUX)
     text = text:gsub("%$29%.7K/s", "$5.5b/s")
     text = text:gsub("%$42K/s", "$6.9b/s")
 
+    -- rareté
     text = text:gsub("Mythic", "OG")
     text = text:gsub("Secret", "OG")
 
-    for original, newName in pairs(REPLACEMENTS) do
-        text = text:gsub(original, newName)
+    -- noms
+    for a,b in pairs(REPLACEMENTS) do
+        text = text:gsub(a,b)
     end
 
     return text
 end
 
--- 🔥 HOOK TEXT (LA VRAIE SOLUTION)
-local function hookLabel(label)
+-- 🔥 FIX CIBLÉ (PAS DE FREEZE)
+local function fixLabel(label)
     if not label:IsA("TextLabel") then return end
-    if label:FindFirstChild("HOOKED") then return end
 
-    Instance.new("BoolValue", label).Name = "HOOKED"
-
-    local old = label.Text
-
-    label:GetPropertyChangedSignal("Text"):Connect(function()
+    local function update()
         local new = processText(label.Text)
         if label.Text ~= new then
             label.Text = new
         end
-    end)
+    end
 
-    -- applique direct
-    label.Text = processText(old)
+    update()
+
+    label:GetPropertyChangedSignal("Text"):Connect(update)
 end
 
--- scan initial
+-- 🔥 SCAN INTELLIGENT (UNE FOIS)
 for _, v in ipairs(game:GetDescendants()) do
     if v:IsA("TextLabel") then
-        hookLabel(v)
+        fixLabel(v)
     end
 end
 
--- nouveaux textes
+-- 🔥 NOUVEAUX ELEMENTS
 game.DescendantAdded:Connect(function(v)
     if v:IsA("TextLabel") then
-        hookLabel(v)
+        task.wait()
+        fixLabel(v)
     end
 end)
 
 -- =========================
--- 🔥 EFFET OG
+-- 🔥 EFFET OG PROPRE
 -- =========================
 
 local function addOGEffect(label)
-    if not label:IsA("TextLabel") then return end
     if label.Text ~= "OG" then return end
     if label:FindFirstChild("OG_GRADIENT") then return end
 
@@ -187,13 +109,12 @@ local function addOGEffect(label)
 
             tween:Play()
             tween.Completed:Wait()
-
             task.wait(2)
         end
     end)
 end
 
--- applique effet OG
+-- applique OG
 game.DescendantAdded:Connect(function(v)
     if v:IsA("TextLabel") then
         task.wait()
