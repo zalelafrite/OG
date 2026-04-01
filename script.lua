@@ -97,7 +97,7 @@ end
 workspace.DescendantAdded:Connect(apply)
 
 -- =========================
--- 🔥 TEXTE + EFFET OG FIX
+-- 🔥 TEXTE + OG EFFECT
 -- =========================
 
 local function processText(text)
@@ -126,7 +126,6 @@ local function addOGEffect(label)
     local gradient = Instance.new("UIGradient")
     gradient.Name = "OG_GRADIENT"
 
-    -- 🔥 bande noire horizontale → devient verticale via offset Y
     gradient.Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(255,215,0)),
         ColorSequenceKeypoint.new(0.48, Color3.fromRGB(255,215,0)),
@@ -136,18 +135,16 @@ local function addOGEffect(label)
     })
 
     gradient.Offset = Vector2.new(0, -1)
-    gradient.Rotation = 0 -- 🔥 IMPORTANT
+    gradient.Rotation = 0
     gradient.Parent = label
 
-    -- 🔥 ANIMATION LENTE (VRAIMENT)
     task.spawn(function()
         while gradient.Parent do
-            
             gradient.Offset = Vector2.new(0, -1)
 
             local tween = TweenService:Create(
                 gradient,
-                TweenInfo.new(3, Enum.EasingStyle.Linear), -- 🔥 BEAUCOUP PLUS LENT
+                TweenInfo.new(3, Enum.EasingStyle.Linear),
                 {Offset = Vector2.new(0, 1)}
             )
 
@@ -190,6 +187,49 @@ task.spawn(function()
             if v:IsA("BillboardGui") then
                 fix(v)
             end
+        end
+    end
+end)
+
+-- =========================
+-- 🔥 INDEX + SHOP FIX (LÉGER)
+-- =========================
+
+local function tryReplaceViewport(vp)
+    local world = vp:FindFirstChildOfClass("WorldModel")
+    if not world then return end
+
+    local model = world:FindFirstChildOfClass("Model")
+    if not model then return end
+
+    for original, newName in pairs(REPLACEMENTS) do
+        if string.find(model.Name, original) then
+            
+            local source = CACHE[newName]
+            if not source then return end
+
+            world:ClearAllChildren()
+            source:Clone().Parent = world
+            break
+        end
+    end
+end
+
+game.DescendantAdded:Connect(function(v)
+    if v:IsA("ViewportFrame") then
+        task.wait(0.2)
+        pcall(function()
+            tryReplaceViewport(v)
+        end)
+    end
+end)
+
+task.delay(3, function()
+    for _, v in ipairs(game:GetDescendants()) do
+        if v:IsA("ViewportFrame") then
+            pcall(function()
+                tryReplaceViewport(v)
+            end)
         end
     end
 end)
