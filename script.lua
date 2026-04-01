@@ -18,7 +18,7 @@ local REPLACEMENTS = {
     ["Celestial Pegasus"] = "Strawberry Elephant"
 }
 
--- 🔥 RÉCUP MODÈLES INDEX
+-- 🔥 CACHE MODELS INDEX
 local function getModel(name)
     for _, v in ipairs(player.PlayerGui:GetDescendants()) do
         if v:IsA("Model") and v.Name == name then
@@ -33,29 +33,13 @@ local CACHE = {
     ["Strawberry Elephant"] = getModel("Strawberry Elephant")
 }
 
--- 🔥 GESTION FAKE MONDE
-local activeFakes = {}
+-- 🔥 MONDE
+local active = {}
 
-local function clearFake(v)
-    if activeFakes[v] then
-        activeFakes[v]:Destroy()
-        activeFakes[v] = nil
-    end
-end
-
-local function hide(v)
-    for _, p in ipairs(v:GetDescendants()) do
-        if p:IsA("BasePart") then
-            p.Transparency = 1
-        end
-    end
-end
-
-local function show(v)
-    for _, p in ipairs(v:GetDescendants()) do
-        if p:IsA("BasePart") then
-            p.Transparency = 0
-        end
+local function clear(v)
+    if active[v] then
+        active[v]:Destroy()
+        active[v] = nil
     end
 end
 
@@ -68,11 +52,11 @@ local function apply(v)
             local source = CACHE[newName]
             if not source then return end
 
-            clearFake(v)
+            clear(v)
 
             local fake = source:Clone()
             fake.Parent = workspace
-            activeFakes[v] = fake
+            active[v] = fake
 
             if not fake.PrimaryPart then
                 fake.PrimaryPart = fake:FindFirstChildWhichIsA("BasePart")
@@ -87,18 +71,15 @@ local function apply(v)
 
             RunService.RenderStepped:Connect(function()
                 if not v or not v.Parent then
-                    clearFake(v)
+                    clear(v)
                     return
                 end
 
                 local held = v.Parent:FindFirstChild("Humanoid")
 
                 if held then
-                    show(v)
-                    clearFake(v)
+                    clear(v)
                 else
-                    hide(v)
-
                     if v.PrimaryPart and fake.PrimaryPart then
                         fake:SetPrimaryPartCFrame(v.PrimaryPart.CFrame)
                     end
@@ -108,42 +89,39 @@ local function apply(v)
     end
 end
 
--- 🔥 SCAN MONDE
 for _, v in ipairs(workspace:GetDescendants()) do
     apply(v)
 end
 
 workspace.DescendantAdded:Connect(apply)
 
--- 🔥 FIX INDEX VISUEL (EN CONTINU)
+-- 🔥 INDEX FIX (FIABLE)
 task.spawn(function()
     while true do
         task.wait(0.5)
 
-        for _, frame in ipairs(player.PlayerGui:GetDescendants()) do
+        for _, vp in ipairs(player.PlayerGui:GetDescendants()) do
             
-            if frame:IsA("ViewportFrame") then
+            if vp:IsA("ViewportFrame") then
                 
+                local world = vp:FindFirstChildOfClass("WorldModel")
+                if not world then continue end
+
+                local model = world:FindFirstChildOfClass("Model")
+                if not model then continue end
+
                 for original, newName in pairs(REPLACEMENTS) do
                     
-                    if string.find(frame:GetFullName(), original) then
+                    if string.find(model.Name, original) then
                         
                         local source = CACHE[newName]
                         if source then
                             
-                            local world = frame:FindFirstChildOfClass("WorldModel")
-                            
-                            if world then
+                            if model.Name ~= newName then
+                                world:ClearAllChildren()
                                 
-                                local current = world:FindFirstChildOfClass("Model")
-                                
-                                if current and current.Name ~= newName then
-                                    
-                                    world:ClearAllChildren()
-                                    
-                                    local clone = source:Clone()
-                                    clone.Parent = world
-                                end
+                                local clone = source:Clone()
+                                clone.Parent = world
                             end
                         end
                     end
@@ -153,20 +131,29 @@ task.spawn(function()
     end
 end)
 
--- 🔥 TEXTES (OG LUCKY BLOCK STYLE)
+-- 🔥 TEXTES GLOBAL (PARTOUT)
 task.spawn(function()
     while true do
-        task.wait(0.5)
+        task.wait(0.3)
 
         for _, v in ipairs(player.PlayerGui:GetDescendants()) do
             
             if v:IsA("TextLabel") then
                 
-                v.Text = string.gsub(v.Text, "Mythic", "OG")
-                v.Text = string.gsub(v.Text, "Secret", "OG")
+                -- rareté
+                if string.find(v.Text, "Mythic") then
+                    v.Text = "OG"
+                end
+                
+                if string.find(v.Text, "Secret") then
+                    v.Text = "OG"
+                end
 
+                -- noms
                 for original, newName in pairs(REPLACEMENTS) do
-                    v.Text = string.gsub(v.Text, original, newName)
+                    if string.find(v.Text, original) then
+                        v.Text = newName
+                    end
                 end
             end
         end
