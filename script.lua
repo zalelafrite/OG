@@ -1,7 +1,9 @@
 task.wait(2)
 
 local player = game.Players.LocalPlayer
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local RS = game:GetService("ReplicatedStorage")
 
 -- 🔥 CONFIG
 local REPLACEMENTS = {
@@ -18,61 +20,96 @@ local REPLACEMENTS = {
     ["Celestial Pegasus"] = "Strawberry Elephant"
 }
 
--- 🔥 TEXTE
+-- 🔥 MODELS FIABLES
+local ANIMALS = RS:WaitForChild("Models"):WaitForChild("Animals")
+
+local function getModel(name)
+    return ANIMALS:FindFirstChild(name)
+end
+
+-- 🔥 HIDE ORIGINAL
+local function hideOriginal(v)
+    for _, obj in ipairs(v:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            obj.Transparency = 1
+        elseif obj:IsA("Decal") or obj:IsA("Texture") then
+            obj.Transparency = 1
+        elseif obj:IsA("BillboardGui") then
+            obj.Enabled = false
+        end
+    end
+end
+
+-- 🔥 MONDE
+local active = {}
+
+local function apply(v)
+    if not v:IsA("Model") then return end
+
+    for original, newName in pairs(REPLACEMENTS) do
+        if string.find(v.Name, original) then
+            
+            if active[v] then return end
+
+            local source = getModel(newName)
+            if not source then return end
+
+            local fake = source:Clone()
+            fake.Parent = workspace
+            active[v] = fake
+
+            if not fake.PrimaryPart then
+                fake.PrimaryPart = fake:FindFirstChildWhichIsA("BasePart")
+            end
+
+            for _, p in ipairs(fake:GetDescendants()) do
+                if p:IsA("BasePart") then
+                    p.Anchored = true
+                    p.CanCollide = false
+                end
+            end
+
+            RunService.RenderStepped:Connect(function()
+                if not v or not v.Parent then
+                    if fake then fake:Destroy() end
+                    return
+                end
+
+                hideOriginal(v)
+
+                if v.PrimaryPart and fake.PrimaryPart then
+                    fake:SetPrimaryPartCFrame(v.PrimaryPart.CFrame)
+                end
+            end)
+
+            break
+        end
+    end
+end
+
+for _, v in ipairs(workspace:GetDescendants()) do
+    apply(v)
+end
+
+workspace.DescendantAdded:Connect(apply)
+
+-- =========================
+-- 🔥 TEXTE + OG EFFECT
+-- =========================
+
 local function processText(text)
-
-    -- 💰 ARGENT (CE QUE TU VEUX)
-    text = text:gsub("%$29%.7K/s", "$5.5b/s")
-    text = text:gsub("%$42K/s", "$6.9b/s")
-
-    -- rareté
     text = text:gsub("Mythic", "OG")
     text = text:gsub("Secret", "OG")
 
-    -- noms
-    for a,b in pairs(REPLACEMENTS) do
-        text = text:gsub(a,b)
+    for original, newName in pairs(REPLACEMENTS) do
+        text = text:gsub(original, newName)
     end
 
     return text
 end
 
--- 🔥 FIX CIBLÉ (PAS DE FREEZE)
-local function fixLabel(label)
-    if not label:IsA("TextLabel") then return end
-
-    local function update()
-        local new = processText(label.Text)
-        if label.Text ~= new then
-            label.Text = new
-        end
-    end
-
-    update()
-
-    label:GetPropertyChangedSignal("Text"):Connect(update)
-end
-
--- 🔥 SCAN INTELLIGENT (UNE FOIS)
-for _, v in ipairs(game:GetDescendants()) do
-    if v:IsA("TextLabel") then
-        fixLabel(v)
-    end
-end
-
--- 🔥 NOUVEAUX ELEMENTS
-game.DescendantAdded:Connect(function(v)
-    if v:IsA("TextLabel") then
-        task.wait()
-        fixLabel(v)
-    end
-end)
-
--- =========================
--- 🔥 EFFET OG PROPRE
--- =========================
-
 local function addOGEffect(label)
+    if not label:IsA("TextLabel") then return end
     if label.Text ~= "OG" then return end
     if label:FindFirstChild("OG_GRADIENT") then return end
 
@@ -109,15 +146,60 @@ local function addOGEffect(label)
 
             tween:Play()
             tween.Completed:Wait()
+
             task.wait(2)
         end
     end)
 end
 
--- applique OG
+local function fix(obj)
+    if obj:IsA("TextLabel") or obj:IsA("TextButton") then
+        obj.Text = processText(obj.Text)
+        addOGEffect(obj)
+    end
+
+    if obj:IsA("BillboardGui") then
+        for _, v in ipairs(obj:GetDescendants()) do
+            if v:IsA("TextLabel") then
+                v.Text = processText(v.Text)
+                addOGEffect(v)
+            end
+        end
+    end
+end
+
+for _, v in ipairs(game:GetDescendants()) do
+    fix(v)
+end
+
 game.DescendantAdded:Connect(function(v)
-    if v:IsA("TextLabel") then
-        task.wait()
-        addOGEffect(v)
+    fix(v)
+end)
+
+-- =========================
+-- 🔥 INDEX + SHOP (SANS FREEZE)
+-- =========================
+
+game.DescendantAdded:Connect(function(v)
+    if v:IsA("ViewportFrame") then
+        task.wait(0.2)
+
+        local world = v:FindFirstChildOfClass("WorldModel")
+        if not world then return end
+
+        local model = world:FindFirstChildOfClass("Model")
+        if not model then return end
+
+        for original, newName in pairs(REPLACEMENTS) do
+            if string.find(model.Name, original) then
+                
+                local source = getModel(newName)
+                if not source then return end
+
+                world:ClearAllChildren()
+                source:Clone().Parent = world
+                break
+            end
+        end
     end
 end)
