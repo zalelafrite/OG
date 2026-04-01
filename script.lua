@@ -18,7 +18,7 @@ local REPLACEMENTS = {
     ["Celestial Pegasus"] = "Strawberry Elephant"
 }
 
--- 🔥 GET MODELS INDEX
+-- 🔥 RÉCUP MODÈLES INDEX
 local function getModel(name)
     for _, v in ipairs(player.PlayerGui:GetDescendants()) do
         if v:IsA("Model") and v.Name == name then
@@ -33,7 +33,7 @@ local CACHE = {
     ["Strawberry Elephant"] = getModel("Strawberry Elephant")
 }
 
--- 🔥 PARTIE 1 : MONDE
+-- 🔥 GESTION FAKE MONDE
 local activeFakes = {}
 
 local function clearFake(v)
@@ -108,53 +108,67 @@ local function apply(v)
     end
 end
 
+-- 🔥 SCAN MONDE
 for _, v in ipairs(workspace:GetDescendants()) do
     apply(v)
 end
 
 workspace.DescendantAdded:Connect(apply)
 
--- 🔥 PARTIE 2 : INDEX VISUEL (LE PLUS IMPORTANT)
+-- 🔥 FIX INDEX VISUEL (EN CONTINU)
+task.spawn(function()
+    while true do
+        task.wait(0.5)
 
-for _, frame in ipairs(player.PlayerGui:GetDescendants()) do
-    
-    if frame:IsA("ViewportFrame") then
-        
-        for original, newName in pairs(REPLACEMENTS) do
+        for _, frame in ipairs(player.PlayerGui:GetDescendants()) do
             
-            if string.find(frame:GetFullName(), original) then
+            if frame:IsA("ViewportFrame") then
                 
-                local source = CACHE[newName]
-                if source then
+                for original, newName in pairs(REPLACEMENTS) do
                     
-                    local world = frame:FindFirstChildOfClass("WorldModel")
-                    if world then
+                    if string.find(frame:GetFullName(), original) then
                         
-                        world:ClearAllChildren()
-                        
-                        local clone = source:Clone()
-                        clone.Parent = world
-                        
+                        local source = CACHE[newName]
+                        if source then
+                            
+                            local world = frame:FindFirstChildOfClass("WorldModel")
+                            
+                            if world then
+                                
+                                local current = world:FindFirstChildOfClass("Model")
+                                
+                                if current and current.Name ~= newName then
+                                    
+                                    world:ClearAllChildren()
+                                    
+                                    local clone = source:Clone()
+                                    clone.Parent = world
+                                end
+                            end
+                        end
                     end
                 end
             end
         end
     end
-end
+end)
 
--- 🔥 PARTIE 3 : TEXTES GLOBAL
+-- 🔥 TEXTES (OG LUCKY BLOCK STYLE)
+task.spawn(function()
+    while true do
+        task.wait(0.5)
 
-for _, v in ipairs(player.PlayerGui:GetDescendants()) do
-    
-    if v:IsA("TextLabel") then
-        
-        -- rareté
-        v.Text = string.gsub(v.Text, "Mythic", "OG")
-        v.Text = string.gsub(v.Text, "Secret", "OG")
+        for _, v in ipairs(player.PlayerGui:GetDescendants()) do
+            
+            if v:IsA("TextLabel") then
+                
+                v.Text = string.gsub(v.Text, "Mythic", "OG")
+                v.Text = string.gsub(v.Text, "Secret", "OG")
 
-        -- noms
-        for original, newName in pairs(REPLACEMENTS) do
-            v.Text = string.gsub(v.Text, original, newName)
+                for original, newName in pairs(REPLACEMENTS) do
+                    v.Text = string.gsub(v.Text, original, newName)
+                end
+            end
         end
     end
-end
+end)
