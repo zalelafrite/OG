@@ -2,6 +2,7 @@ task.wait(2)
 
 local player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 
 -- 🔥 CONFIG
 local REPLACEMENTS = {
@@ -18,7 +19,7 @@ local REPLACEMENTS = {
     ["Celestial Pegasus"] = "Strawberry Elephant"
 }
 
--- 🔥 récupérer modèles depuis index (une fois)
+-- 🔥 CACHE MODELS
 local CACHE = {}
 for _, v in ipairs(player.PlayerGui:GetDescendants()) do
     if v:IsA("Model") then
@@ -26,7 +27,7 @@ for _, v in ipairs(player.PlayerGui:GetDescendants()) do
     end
 end
 
--- 🔥 cacher complètement le vrai brainrot
+-- 🔥 HIDE ORIGINAL
 local function hideOriginal(v)
     for _, obj in ipairs(v:GetDescendants()) do
         if obj:IsA("BasePart") then
@@ -40,7 +41,7 @@ local function hideOriginal(v)
     end
 end
 
--- 🔥 MONDE (stable, sans duplication)
+-- 🔥 MONDE
 local active = {}
 
 local function apply(v)
@@ -89,7 +90,6 @@ local function apply(v)
     end
 end
 
--- scan initial
 for _, v in ipairs(workspace:GetDescendants()) do
     apply(v)
 end
@@ -97,7 +97,7 @@ end
 workspace.DescendantAdded:Connect(apply)
 
 -- =========================
--- 🔥 TEXTE (FIX PROPRE)
+-- 🔥 TEXTE
 -- =========================
 
 local function processText(text)
@@ -111,17 +111,64 @@ local function processText(text)
     return text
 end
 
+-- =========================
+-- 🔥 EFFET OG
+-- =========================
+
+local function addOGEffect(label)
+    if not label:IsA("TextLabel") then return end
+    if label.Text ~= "OG" then return end
+    if label:FindFirstChild("OG_EFFECT") then return end
+
+    -- couleur
+    label.TextColor3 = Color3.fromRGB(255, 215, 0)
+
+    -- contour
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.new(0,0,0)
+    stroke.Thickness = 2
+    stroke.Parent = label
+
+    -- barre animée
+    local shine = Instance.new("Frame")
+    shine.Name = "OG_EFFECT"
+    shine.BackgroundColor3 = Color3.new(0,0,0)
+    shine.BackgroundTransparency = 0.3
+    shine.Size = UDim2.new(0.3,0,1,0)
+    shine.Position = UDim2.new(-1,0,0,0)
+    shine.Rotation = 20
+    shine.Parent = label
+
+    task.spawn(function()
+        while shine.Parent do
+            shine.Position = UDim2.new(-1,0,0,0)
+
+            local tween = TweenService:Create(
+                shine,
+                TweenInfo.new(1, Enum.EasingStyle.Linear),
+                {Position = UDim2.new(1.5,0,0,0)}
+            )
+
+            tween:Play()
+            tween.Completed:Wait()
+            task.wait(1)
+        end
+    end)
+end
+
 local function fix(obj)
-    -- UI classique
+    -- texte UI
     if obj:IsA("TextLabel") or obj:IsA("TextButton") then
         obj.Text = processText(obj.Text)
+        addOGEffect(obj)
     end
 
-    -- 🔥 IMPORTANT : texte au-dessus des brainrots
+    -- texte au-dessus des brainrots
     if obj:IsA("BillboardGui") then
         for _, v in ipairs(obj:GetDescendants()) do
             if v:IsA("TextLabel") then
                 v.Text = processText(v.Text)
+                addOGEffect(v)
             end
         end
     end
@@ -137,7 +184,7 @@ game.DescendantAdded:Connect(function(v)
     fix(v)
 end)
 
--- 🔥 refresh léger pour éviter reset du jeu
+-- refresh léger
 task.spawn(function()
     while true do
         task.wait(1)
