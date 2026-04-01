@@ -97,7 +97,7 @@ end
 workspace.DescendantAdded:Connect(apply)
 
 -- =========================
--- 🔥 TEXTE + EFFET OG PROPRE
+-- 🔥 TEXTE + EFFET OG
 -- =========================
 
 local function processText(text)
@@ -125,7 +125,7 @@ local function addOGEffect(label)
     stroke.Thickness = 1.5
     stroke.Parent = label
 
-    -- 🔥 gradient propre (PAS de frame)
+    -- 🔥 gradient VERTICAL
     local gradient = Instance.new("UIGradient")
     gradient.Name = "OG_GRADIENT"
 
@@ -137,36 +137,35 @@ local function addOGEffect(label)
         ColorSequenceKeypoint.new(1, Color3.fromRGB(255,215,0)),
     })
 
-    gradient.Offset = Vector2.new(-1, 0)
+    gradient.Offset = Vector2.new(0, -1) -- 🔥 start en haut
+    gradient.Rotation = 90 -- 🔥 vertical
     gradient.Parent = label
 
-    -- animation fluide
+    -- 🔥 animation PLUS LENTE
     task.spawn(function()
         while gradient.Parent do
-            gradient.Offset = Vector2.new(-1, 0)
+            gradient.Offset = Vector2.new(0, -1)
 
             local tween = TweenService:Create(
                 gradient,
-                TweenInfo.new(0.8, Enum.EasingStyle.Linear),
-                {Offset = Vector2.new(1, 0)}
+                TweenInfo.new(1.5, Enum.EasingStyle.Linear), -- 🔥 plus lent
+                {Offset = Vector2.new(0, 1)}
             )
 
             tween:Play()
             tween.Completed:Wait()
 
-            task.wait(1.2)
+            task.wait(2)
         end
     end)
 end
 
 local function fix(obj)
-    -- UI
     if obj:IsA("TextLabel") or obj:IsA("TextButton") then
         obj.Text = processText(obj.Text)
         addOGEffect(obj)
     end
 
-    -- texte au-dessus des brainrots
     if obj:IsA("BillboardGui") then
         for _, v in ipairs(obj:GetDescendants()) do
             if v:IsA("TextLabel") then
@@ -182,7 +181,7 @@ for _, v in ipairs(game:GetDescendants()) do
     fix(v)
 end
 
--- nouveaux éléments
+-- nouveaux
 game.DescendantAdded:Connect(function(v)
     fix(v)
 end)
