@@ -97,7 +97,7 @@ end
 workspace.DescendantAdded:Connect(apply)
 
 -- =========================
--- 🔥 TEXTE + EFFET OG
+-- 🔥 TEXTE + EFFET OG FIX
 -- =========================
 
 local function processText(text)
@@ -116,39 +116,38 @@ local function addOGEffect(label)
     if label.Text ~= "OG" then return end
     if label:FindFirstChild("OG_GRADIENT") then return end
 
-    -- couleur
     label.TextColor3 = Color3.fromRGB(255, 215, 0)
 
-    -- contour
     local stroke = Instance.new("UIStroke")
     stroke.Color = Color3.new(0,0,0)
     stroke.Thickness = 1.5
     stroke.Parent = label
 
-    -- 🔥 gradient VERTICAL
     local gradient = Instance.new("UIGradient")
     gradient.Name = "OG_GRADIENT"
 
+    -- 🔥 bande noire horizontale → devient verticale via offset Y
     gradient.Color = ColorSequence.new({
         ColorSequenceKeypoint.new(0, Color3.fromRGB(255,215,0)),
-        ColorSequenceKeypoint.new(0.45, Color3.fromRGB(255,215,0)),
+        ColorSequenceKeypoint.new(0.48, Color3.fromRGB(255,215,0)),
         ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0,0,0)),
-        ColorSequenceKeypoint.new(0.55, Color3.fromRGB(255,215,0)),
+        ColorSequenceKeypoint.new(0.52, Color3.fromRGB(255,215,0)),
         ColorSequenceKeypoint.new(1, Color3.fromRGB(255,215,0)),
     })
 
-    gradient.Offset = Vector2.new(0, -1) -- 🔥 start en haut
-    gradient.Rotation = 90 -- 🔥 vertical
+    gradient.Offset = Vector2.new(0, -1)
+    gradient.Rotation = 0 -- 🔥 IMPORTANT
     gradient.Parent = label
 
-    -- 🔥 animation PLUS LENTE
+    -- 🔥 ANIMATION LENTE (VRAIMENT)
     task.spawn(function()
         while gradient.Parent do
+            
             gradient.Offset = Vector2.new(0, -1)
 
             local tween = TweenService:Create(
                 gradient,
-                TweenInfo.new(1.5, Enum.EasingStyle.Linear), -- 🔥 plus lent
+                TweenInfo.new(3, Enum.EasingStyle.Linear), -- 🔥 BEAUCOUP PLUS LENT
                 {Offset = Vector2.new(0, 1)}
             )
 
@@ -176,17 +175,14 @@ local function fix(obj)
     end
 end
 
--- scan initial
 for _, v in ipairs(game:GetDescendants()) do
     fix(v)
 end
 
--- nouveaux
 game.DescendantAdded:Connect(function(v)
     fix(v)
 end)
 
--- refresh léger
 task.spawn(function()
     while true do
         task.wait(1)
