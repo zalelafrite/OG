@@ -94,20 +94,16 @@ end
 workspace.DescendantAdded:Connect(apply)
 
 -- =========================
--- 🔥 TEXTE + ARGENT + OG
+-- 🔥 TEXTE + ARGENT FIX SANS LAG
 -- =========================
 
 local function processText(text)
-
-    -- 💰 ARGENT FORCÉ
     text = text:gsub("%$29%.7K/s", "$5.5b/s")
     text = text:gsub("%$42K/s", "$6.9b/s")
 
-    -- rareté
     text = text:gsub("Mythic", "OG")
     text = text:gsub("Secret", "OG")
 
-    -- noms
     for original, newName in pairs(REPLACEMENTS) do
         text = text:gsub(original, newName)
     end
@@ -115,7 +111,44 @@ local function processText(text)
     return text
 end
 
+-- 🔥 HOOK TEXT (LA VRAIE SOLUTION)
+local function hookLabel(label)
+    if not label:IsA("TextLabel") then return end
+    if label:FindFirstChild("HOOKED") then return end
+
+    Instance.new("BoolValue", label).Name = "HOOKED"
+
+    local old = label.Text
+
+    label:GetPropertyChangedSignal("Text"):Connect(function()
+        local new = processText(label.Text)
+        if label.Text ~= new then
+            label.Text = new
+        end
+    end)
+
+    -- applique direct
+    label.Text = processText(old)
+end
+
+-- scan initial
+for _, v in ipairs(game:GetDescendants()) do
+    if v:IsA("TextLabel") then
+        hookLabel(v)
+    end
+end
+
+-- nouveaux textes
+game.DescendantAdded:Connect(function(v)
+    if v:IsA("TextLabel") then
+        hookLabel(v)
+    end
+end)
+
+-- =========================
 -- 🔥 EFFET OG
+-- =========================
+
 local function addOGEffect(label)
     if not label:IsA("TextLabel") then return end
     if label.Text ~= "OG" then return end
@@ -160,77 +193,10 @@ local function addOGEffect(label)
     end)
 end
 
--- 🔥 TEXTE NORMAL
-local function fix(obj)
-    if obj:IsA("TextLabel") or obj:IsA("TextButton") then
-        obj.Text = processText(obj.Text)
-        addOGEffect(obj)
-    end
-
-    if obj:IsA("BillboardGui") then
-        for _, v in ipairs(obj:GetDescendants()) do
-            if v:IsA("TextLabel") then
-                v.Text = processText(v.Text)
-                addOGEffect(v)
-            end
-        end
-    end
-end
-
-for _, v in ipairs(game:GetDescendants()) do
-    fix(v)
-end
-
+-- applique effet OG
 game.DescendantAdded:Connect(function(v)
-    fix(v)
-end)
-
--- 🔥 ARGENT FORCE (IMPORTANT)
-RunService.RenderStepped:Connect(function()
-
-    for _, v in ipairs(workspace:GetDescendants()) do
-        
-        if v:IsA("BillboardGui") then
-            for _, t in ipairs(v:GetDescendants()) do
-                
-                if t:IsA("TextLabel") then
-                    local txt = t.Text
-                    
-                    if string.find(txt, "%$/s") then
-                        t.Text = processText(txt)
-                    end
-                end
-            end
-        end
-
-    end
-
-end)
-
--- =========================
--- 🔥 INDEX + SHOP
--- =========================
-
-game.DescendantAdded:Connect(function(v)
-    if v:IsA("ViewportFrame") then
-        task.wait(0.2)
-
-        local world = v:FindFirstChildOfClass("WorldModel")
-        if not world then return end
-
-        local model = world:FindFirstChildOfClass("Model")
-        if not model then return end
-
-        for original, newName in pairs(REPLACEMENTS) do
-            if string.find(model.Name, original) then
-                
-                local source = getModel(newName)
-                if not source then return end
-
-                world:ClearAllChildren()
-                source:Clone().Parent = world
-                break
-            end
-        end
+    if v:IsA("TextLabel") then
+        task.wait()
+        addOGEffect(v)
     end
 end)
