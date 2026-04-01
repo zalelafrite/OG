@@ -112,58 +112,57 @@ local function processText(text)
 end
 
 -- =========================
--- 🔥 EFFET OG
+-- 🔥 EFFET OG (PROPRE)
 -- =========================
 
 local function addOGEffect(label)
     if not label:IsA("TextLabel") then return end
     if label.Text ~= "OG" then return end
-    if label:FindFirstChild("OG_EFFECT") then return end
+    if label:FindFirstChild("OG_SHINE") then return end
 
-    -- couleur
     label.TextColor3 = Color3.fromRGB(255, 215, 0)
 
-    -- contour
     local stroke = Instance.new("UIStroke")
     stroke.Color = Color3.new(0,0,0)
-    stroke.Thickness = 2
+    stroke.Thickness = 1.5
     stroke.Parent = label
 
-    -- barre animée
+    -- 🔥 barre fine
     local shine = Instance.new("Frame")
-    shine.Name = "OG_EFFECT"
+    shine.Name = "OG_SHINE"
     shine.BackgroundColor3 = Color3.new(0,0,0)
-    shine.BackgroundTransparency = 0.3
-    shine.Size = UDim2.new(0.3,0,1,0)
-    shine.Position = UDim2.new(-1,0,0,0)
-    shine.Rotation = 20
+    shine.BackgroundTransparency = 0.6
+    shine.Size = UDim2.new(0.15,0,1.2,0)
+    shine.Position = UDim2.new(-0.5,0,0,0)
+    shine.Rotation = 15
+    shine.BorderSizePixel = 0
     shine.Parent = label
 
     task.spawn(function()
         while shine.Parent do
-            shine.Position = UDim2.new(-1,0,0,0)
+            
+            shine.Position = UDim2.new(-0.5,0,0,0)
 
             local tween = TweenService:Create(
                 shine,
-                TweenInfo.new(1, Enum.EasingStyle.Linear),
-                {Position = UDim2.new(1.5,0,0,0)}
+                TweenInfo.new(0.6, Enum.EasingStyle.Linear),
+                {Position = UDim2.new(1.2,0,0,0)}
             )
 
             tween:Play()
             tween.Completed:Wait()
-            task.wait(1)
+
+            task.wait(1.5)
         end
     end)
 end
 
 local function fix(obj)
-    -- texte UI
     if obj:IsA("TextLabel") or obj:IsA("TextButton") then
         obj.Text = processText(obj.Text)
         addOGEffect(obj)
     end
 
-    -- texte au-dessus des brainrots
     if obj:IsA("BillboardGui") then
         for _, v in ipairs(obj:GetDescendants()) do
             if v:IsA("TextLabel") then
@@ -179,7 +178,7 @@ for _, v in ipairs(game:GetDescendants()) do
     fix(v)
 end
 
--- nouveaux éléments
+-- nouveaux
 game.DescendantAdded:Connect(function(v)
     fix(v)
 end)
