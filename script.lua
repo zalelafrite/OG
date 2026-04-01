@@ -3,6 +3,7 @@ task.wait(2)
 local player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local RS = game:GetService("ReplicatedStorage")
 
 -- 🔥 CONFIG
 local REPLACEMENTS = {
@@ -19,12 +20,11 @@ local REPLACEMENTS = {
     ["Celestial Pegasus"] = "Strawberry Elephant"
 }
 
--- 🔥 CACHE MODELS
-local CACHE = {}
-for _, v in ipairs(player.PlayerGui:GetDescendants()) do
-    if v:IsA("Model") then
-        CACHE[v.Name] = v
-    end
+-- 🔥 MODELS FIABLES
+local ANIMALS = RS:WaitForChild("Models"):WaitForChild("Animals")
+
+local function getModel(name)
+    return ANIMALS:FindFirstChild(name)
 end
 
 -- 🔥 HIDE ORIGINAL
@@ -32,7 +32,6 @@ local function hideOriginal(v)
     for _, obj in ipairs(v:GetDescendants()) do
         if obj:IsA("BasePart") then
             obj.Transparency = 1
-            obj.CanCollide = false
         elseif obj:IsA("Decal") or obj:IsA("Texture") then
             obj.Transparency = 1
         elseif obj:IsA("BillboardGui") then
@@ -52,7 +51,7 @@ local function apply(v)
             
             if active[v] then return end
 
-            local source = CACHE[newName]
+            local source = getModel(newName)
             if not source then return end
 
             local fake = source:Clone()
@@ -70,10 +69,8 @@ local function apply(v)
                 end
             end
 
-            local conn
-            conn = RunService.RenderStepped:Connect(function()
+            RunService.RenderStepped:Connect(function()
                 if not v or not v.Parent then
-                    if conn then conn:Disconnect() end
                     if fake then fake:Destroy() end
                     return
                 end
@@ -116,7 +113,7 @@ local function addOGEffect(label)
     if label.Text ~= "OG" then return end
     if label:FindFirstChild("OG_GRADIENT") then return end
 
-    label.TextColor3 = Color3.fromRGB(255, 215, 0)
+    label.TextColor3 = Color3.fromRGB(255,215,0)
 
     local stroke = Instance.new("UIStroke")
     stroke.Color = Color3.new(0,0,0)
@@ -135,7 +132,6 @@ local function addOGEffect(label)
     })
 
     gradient.Offset = Vector2.new(0, -1)
-    gradient.Rotation = 0
     gradient.Parent = label
 
     task.spawn(function()
@@ -180,56 +176,30 @@ game.DescendantAdded:Connect(function(v)
     fix(v)
 end)
 
-task.spawn(function()
-    while true do
-        task.wait(1)
-        for _, v in ipairs(workspace:GetDescendants()) do
-            if v:IsA("BillboardGui") then
-                fix(v)
-            end
-        end
-    end
-end)
-
 -- =========================
--- 🔥 INDEX + SHOP FIX (LÉGER)
+-- 🔥 INDEX + SHOP (SANS FREEZE)
 -- =========================
-
-local function tryReplaceViewport(vp)
-    local world = vp:FindFirstChildOfClass("WorldModel")
-    if not world then return end
-
-    local model = world:FindFirstChildOfClass("Model")
-    if not model then return end
-
-    for original, newName in pairs(REPLACEMENTS) do
-        if string.find(model.Name, original) then
-            
-            local source = CACHE[newName]
-            if not source then return end
-
-            world:ClearAllChildren()
-            source:Clone().Parent = world
-            break
-        end
-    end
-end
 
 game.DescendantAdded:Connect(function(v)
     if v:IsA("ViewportFrame") then
         task.wait(0.2)
-        pcall(function()
-            tryReplaceViewport(v)
-        end)
-    end
-end)
 
-task.delay(3, function()
-    for _, v in ipairs(game:GetDescendants()) do
-        if v:IsA("ViewportFrame") then
-            pcall(function()
-                tryReplaceViewport(v)
-            end)
+        local world = v:FindFirstChildOfClass("WorldModel")
+        if not world then return end
+
+        local model = world:FindFirstChildOfClass("Model")
+        if not model then return end
+
+        for original, newName in pairs(REPLACEMENTS) do
+            if string.find(model.Name, original) then
+                
+                local source = getModel(newName)
+                if not source then return end
+
+                world:ClearAllChildren()
+                source:Clone().Parent = world
+                break
+            end
         end
     end
 end)
