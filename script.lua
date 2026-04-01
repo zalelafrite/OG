@@ -20,7 +20,7 @@ local REPLACEMENTS = {
     ["Celestial Pegasus"] = "Strawberry Elephant"
 }
 
--- 🔥 MODELS FIABLES
+-- 🔥 MODELS
 local ANIMALS = RS:WaitForChild("Models"):WaitForChild("Animals")
 
 local function getModel(name)
@@ -94,13 +94,20 @@ end
 workspace.DescendantAdded:Connect(apply)
 
 -- =========================
--- 🔥 TEXTE + OG EFFECT
+-- 🔥 TEXTE + ARGENT + OG
 -- =========================
 
 local function processText(text)
+
+    -- 💰 ARGENT (CORRIGÉ)
+    text = text:gsub("%$29%.7K/s", "$5.5b/s")
+    text = text:gsub("%$42K/s", "$6.9b/s")
+
+    -- rareté
     text = text:gsub("Mythic", "OG")
     text = text:gsub("Secret", "OG")
 
+    -- noms
     for original, newName in pairs(REPLACEMENTS) do
         text = text:gsub(original, newName)
     end
@@ -108,6 +115,7 @@ local function processText(text)
     return text
 end
 
+-- 🔥 EFFET OG
 local function addOGEffect(label)
     if not label:IsA("TextLabel") then return end
     if label.Text ~= "OG" then return end
@@ -177,7 +185,7 @@ game.DescendantAdded:Connect(function(v)
 end)
 
 -- =========================
--- 🔥 INDEX + SHOP (SANS FREEZE)
+-- 🔥 INDEX + SHOP
 -- =========================
 
 game.DescendantAdded:Connect(function(v)
