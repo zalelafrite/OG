@@ -3,15 +3,13 @@ task.wait(2)
 local player = game.Players.LocalPlayer
 local RunService = game:GetService("RunService")
 
--- 🔥 CONFIG REMPLACEMENTS
+-- 🔥 REMPLACEMENTS
 local REPLACEMENTS = {
     ["Spioniro Golubiro"] = "Skibidi Toilet",
-
     ["Zibra Zubra Zibralini"] = "Skibidi Toilet",
     ["Tigrilini Watermelini"] = "Meowl",
     ["Carrotini Brainini"] = "Meowl",
     ["Bananito Bandito"] = "Strawberry Elephant",
-
     ["Torrtuginni Dragonfrutini"] = "Skibidi Toilet",
     ["Pot Hotspot"] = "Skibidi Toilet",
     ["Esok Sekolah"] = "Meowl",
@@ -20,24 +18,7 @@ local REPLACEMENTS = {
     ["Celestial Pegasus"] = "Strawberry Elephant"
 }
 
--- 🔥 RARETÉ
-local RARITY = {
-    ["Spioniro Golubiro"] = "OG",
-
-    ["Zibra Zubra Zibralini"] = "OG",
-    ["Tigrilini Watermelini"] = "OG",
-    ["Carrotini Brainini"] = "OG",
-    ["Bananito Bandito"] = "OG",
-
-    ["Torrtuginni Dragonfrutini"] = "OG",
-    ["Pot Hotspot"] = "OG",
-    ["Esok Sekolah"] = "OG",
-    ["Spaghetti Tualetti"] = "OG",
-    ["La Secret Combinasion"] = "OG",
-    ["Celestial Pegasus"] = "OG"
-}
-
--- 🔥 RÉCUP MODELS INDEX
+-- 🔥 GET MODELS INDEX
 local function getModel(name)
     for _, v in ipairs(player.PlayerGui:GetDescendants()) do
         if v:IsA("Model") and v.Name == name then
@@ -52,7 +33,7 @@ local CACHE = {
     ["Strawberry Elephant"] = getModel("Strawberry Elephant")
 }
 
--- 🔥 STOCK FAKE
+-- 🔥 PARTIE 1 : MONDE
 local activeFakes = {}
 
 local function clearFake(v)
@@ -62,42 +43,22 @@ local function clearFake(v)
     end
 end
 
-local function hideOriginal(v)
+local function hide(v)
     for _, p in ipairs(v:GetDescendants()) do
         if p:IsA("BasePart") then
             p.Transparency = 1
-        elseif p:IsA("BillboardGui") then
-            p.Enabled = false
         end
     end
 end
 
-local function showOriginal(v)
+local function show(v)
     for _, p in ipairs(v:GetDescendants()) do
         if p:IsA("BasePart") then
             p.Transparency = 0
-        elseif p:IsA("BillboardGui") then
-            p.Enabled = true
         end
     end
 end
 
--- 🔥 MODIF NOM + RARETÉ
-local function updateUI(v, newName, rarity)
-    for _, gui in ipairs(v:GetDescendants()) do
-        if gui:IsA("TextLabel") then
-
-            if string.find(string.lower(gui.Text), "mythic")
-            or string.find(string.lower(gui.Text), "secret") then
-                gui.Text = rarity
-            end
-
-            gui.Text = string.gsub(gui.Text, v.Name, newName)
-        end
-    end
-end
-
--- 🔥 APPLY
 local function apply(v)
     if not v:IsA("Model") then return end
 
@@ -113,12 +74,10 @@ local function apply(v)
             fake.Parent = workspace
             activeFakes[v] = fake
 
-            -- PrimaryPart fix
             if not fake.PrimaryPart then
                 fake.PrimaryPart = fake:FindFirstChildWhichIsA("BasePart")
             end
 
-            -- stabiliser
             for _, p in ipairs(fake:GetDescendants()) do
                 if p:IsA("BasePart") then
                     p.Anchored = true
@@ -126,23 +85,19 @@ local function apply(v)
                 end
             end
 
-            -- update texte
-            updateUI(v, newName, RARITY[original] or "OG")
-
-            -- follow
             RunService.RenderStepped:Connect(function()
                 if not v or not v.Parent then
                     clearFake(v)
                     return
                 end
 
-                local isHeld = v.Parent:FindFirstChild("Humanoid")
+                local held = v.Parent:FindFirstChild("Humanoid")
 
-                if isHeld then
-                    showOriginal(v)
+                if held then
+                    show(v)
                     clearFake(v)
                 else
-                    hideOriginal(v)
+                    hide(v)
 
                     if v.PrimaryPart and fake.PrimaryPart then
                         fake:SetPrimaryPartCFrame(v.PrimaryPart.CFrame)
@@ -153,18 +108,53 @@ local function apply(v)
     end
 end
 
--- 🔥 SCAN MONDE
 for _, v in ipairs(workspace:GetDescendants()) do
     apply(v)
 end
 
 workspace.DescendantAdded:Connect(apply)
 
--- 🔥 MODIF INDEX (texte)
+-- 🔥 PARTIE 2 : INDEX VISUEL (LE PLUS IMPORTANT)
+
+for _, frame in ipairs(player.PlayerGui:GetDescendants()) do
+    
+    if frame:IsA("ViewportFrame") then
+        
+        for original, newName in pairs(REPLACEMENTS) do
+            
+            if string.find(frame:GetFullName(), original) then
+                
+                local source = CACHE[newName]
+                if source then
+                    
+                    local world = frame:FindFirstChildOfClass("WorldModel")
+                    if world then
+                        
+                        world:ClearAllChildren()
+                        
+                        local clone = source:Clone()
+                        clone.Parent = world
+                        
+                    end
+                end
+            end
+        end
+    end
+end
+
+-- 🔥 PARTIE 3 : TEXTES GLOBAL
+
 for _, v in ipairs(player.PlayerGui:GetDescendants()) do
-    for original, newName in pairs(REPLACEMENTS) do
-        if v:IsA("TextLabel") and string.find(v.Text, original) then
-            v.Text = newName
+    
+    if v:IsA("TextLabel") then
+        
+        -- rareté
+        v.Text = string.gsub(v.Text, "Mythic", "OG")
+        v.Text = string.gsub(v.Text, "Secret", "OG")
+
+        -- noms
+        for original, newName in pairs(REPLACEMENTS) do
+            v.Text = string.gsub(v.Text, original, newName)
         end
     end
 end
