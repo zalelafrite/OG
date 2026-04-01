@@ -18,7 +18,7 @@ local REPLACEMENTS = {
     ["Celestial Pegasus"] = "Strawberry Elephant"
 }
 
--- 🔥 CACHE MODELS (UNE FOIS)
+-- 🔥 CACHE MODELS
 local CACHE = {}
 for _, v in ipairs(player.PlayerGui:GetDescendants()) do
     if v:IsA("Model") then
@@ -26,23 +26,18 @@ for _, v in ipairs(player.PlayerGui:GetDescendants()) do
     end
 end
 
--- 🔥 MONDE (SANS BUG)
-local active = {}
-
-local function applyWorld(v)
+-- 🔥 MONDE (SIMPLE ET STABLE)
+local function apply(v)
     if not v:IsA("Model") then return end
 
     for original, newName in pairs(REPLACEMENTS) do
         if string.find(v.Name, original) then
             
-            if active[v] then return end
-
             local source = CACHE[newName]
             if not source then return end
 
             local fake = source:Clone()
             fake.Parent = workspace
-            active[v] = fake
 
             if not fake.PrimaryPart then
                 fake.PrimaryPart = fake:FindFirstChildWhichIsA("BasePart")
@@ -55,73 +50,40 @@ local function applyWorld(v)
                 end
             end
 
-            RunService.RenderStepped:Connect(function()
-                if not v or not v.Parent then return end
+            -- 🔥 follow SANS spam
+            local conn
+            conn = RunService.RenderStepped:Connect(function()
+                if not v or not v.Parent then
+                    if conn then conn:Disconnect() end
+                    if fake then fake:Destroy() end
+                    return
+                end
 
                 if v.PrimaryPart and fake.PrimaryPart then
                     fake:SetPrimaryPartCFrame(v.PrimaryPart.CFrame)
                 end
             end)
+
+            break
         end
     end
 end
 
 for _, v in ipairs(workspace:GetDescendants()) do
-    applyWorld(v)
+    apply(v)
 end
 
-workspace.DescendantAdded:Connect(applyWorld)
+workspace.DescendantAdded:Connect(apply)
 
--- 🔥 INDEX (ULTRA CIBLÉ)
-local function fixIndex()
-    local gui = player.PlayerGui:FindFirstChild("Index")
-    if not gui then return end
+-- 🔥 TEXTES GLOBAL (UNE FOIS)
+for _, v in ipairs(game:GetDescendants()) do
+    if v:IsA("TextLabel") or v:IsA("TextButton") then
+        
+        v.Text = v.Text:gsub("Mythic", "OG")
+        v.Text = v.Text:gsub("Secret", "OG")
 
-    for _, vp in ipairs(gui:GetDescendants()) do
-        if vp:IsA("ViewportFrame") then
-            
-            local world = vp:FindFirstChildOfClass("WorldModel")
-            if not world then continue end
-
-            local model = world:FindFirstChildOfClass("Model")
-            if not model then continue end
-
-            for original, newName in pairs(REPLACEMENTS) do
-                if string.find(model.Name, original) then
-                    
-                    local source = CACHE[newName]
-                    if not source then continue end
-
-                    world:ClearAllChildren()
-                    source:Clone().Parent = world
-                end
-            end
+        for original, newName in pairs(REPLACEMENTS) do
+            v.Text = v.Text:gsub(original, newName)
         end
     end
 end
-
--- 🔥 ON FIX QUAND TU OUVRES L’INDEX
-player.PlayerGui.ChildAdded:Connect(function(v)
-    if v.Name == "Index" then
-        task.wait(0.5)
-        fixIndex()
-    end
-end)
-
--- 🔥 TEXTES (UNE FOIS PROPRE)
-local function fixTexts()
-    for _, v in ipairs(player.PlayerGui:GetDescendants()) do
-        if v:IsA("TextLabel") or v:IsA("TextButton") then
-            
-            v.Text = v.Text:gsub("Mythic", "OG")
-            v.Text = v.Text:gsub("Secret", "OG")
-
-            for original, newName in pairs(REPLACEMENTS) do
-                v.Text = v.Text:gsub(original, newName)
-            end
-        end
-    end
-end
-
-task.wait(1)
-fixTexts()
