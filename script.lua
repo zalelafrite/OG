@@ -36,14 +36,13 @@ local function getModel(name)
 end
 
 -- =========================
--- 🔥 HIDE ORIGINAL
+-- 🔥 HIDE ORIGINAL (SAFE)
 -- =========================
 
 local function hideOriginal(v)
     for _, obj in ipairs(v:GetDescendants()) do
         if obj:IsA("BasePart") then
             obj.Transparency = 1
-            obj.CanCollide = false
         elseif obj:IsA("Decal") or obj:IsA("Texture") then
             obj.Transparency = 1
         elseif obj:IsA("BillboardGui") then
@@ -53,7 +52,7 @@ local function hideOriginal(v)
 end
 
 -- =========================
--- 🔥 REMPLACEMENT AVEC FIX LUCKY BLOCK
+-- 🔥 REMPLACEMENT STABLE
 -- =========================
 
 local active = {}
@@ -90,13 +89,6 @@ local function apply(v)
                     return
                 end
 
-                -- 🔥 FIX : si le modèle devient trop petit → delete clone
-                if v.PrimaryPart and v.PrimaryPart.Size.Magnitude < 1 then
-                    fake:Destroy()
-                    active[v] = nil
-                    return
-                end
-
                 hideOriginal(v)
 
                 if v.PrimaryPart and fake.PrimaryPart then
@@ -116,7 +108,7 @@ end
 workspace.DescendantAdded:Connect(apply)
 
 -- =========================
--- 💰 TEXTE + NOM PERMANENT
+-- 💰 TEXTE + NOM (FIX GLOBAL)
 -- =========================
 
 local function process(text)
@@ -136,8 +128,38 @@ local function process(text)
     return text
 end
 
+local function applyText(v)
+    if v:IsA("TextLabel") or v:IsA("TextButton") then
+        local new = process(v.Text)
+        if v.Text ~= new then
+            v.Text = new
+        end
+    end
+end
+
+-- 🔥 scan initial
+for _, v in ipairs(game:GetDescendants()) do
+    applyText(v)
+end
+
+-- 🔥 nouveaux éléments
+game.DescendantAdded:Connect(function(v)
+    task.wait()
+    applyText(v)
+end)
+
+-- 🔥 refresh léger (fix déplacement)
+task.spawn(function()
+    while true do
+        task.wait(2)
+        for _, v in ipairs(player.PlayerGui:GetDescendants()) do
+            applyText(v)
+        end
+    end
+end)
+
 -- =========================
--- ✨ OG EFFET FIX (JAUNE VISIBLE)
+-- ✨ OG EFFECT JAUNE FIX
 -- =========================
 
 local function addEffect(label)
@@ -148,9 +170,9 @@ local function addEffect(label)
     g.Name = "FX"
 
     g.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255,200,0)),
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255,215,0)),
         ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0,0,0)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(255,200,0))
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255,215,0))
     })
 
     g.Rotation = 90
@@ -171,34 +193,9 @@ local function addEffect(label)
     end)
 end
 
--- =========================
--- 🔥 HOOK PERMANENT
--- =========================
-
-local function hook(v)
-    if not (v:IsA("TextLabel") or v:IsA("TextButton")) then return end
-    if v:FindFirstChild("LOCK") then return end
-
-    Instance.new("BoolValue", v).Name = "LOCK"
-
-    local function update()
-        local new = process(v.Text)
-        if v.Text ~= new then
-            v.Text = new
-        end
-
+-- appliquer effet
+for _, v in ipairs(game:GetDescendants()) do
+    if v:IsA("TextLabel") then
         addEffect(v)
     end
-
-    update()
-    v:GetPropertyChangedSignal("Text"):Connect(update)
 end
-
-for _, v in ipairs(game:GetDescendants()) do
-    hook(v)
-end
-
-game.DescendantAdded:Connect(function(v)
-    task.wait()
-    hook(v)
-end)
