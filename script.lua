@@ -5,7 +5,10 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local RS = game:GetService("ReplicatedStorage")
 
+-- =========================
 -- 🔥 CONFIG
+-- =========================
+
 local REPLACEMENTS = {
     ["Spioniro Golubiro"] = "Skibidi Toilet",
     ["Zibra Zubra Zibralini"] = "Skibidi Toilet",
@@ -17,21 +20,30 @@ local REPLACEMENTS = {
     ["Esok Sekolah"] = "Meowl",
     ["Spaghetti Tualetti"] = "Meowl",
     ["La Secret Combinasion"] = "Strawberry Elephant",
-    ["Celestial Pegasus"] = "Strawberry Elephant"
+    ["Celestial Pegasus"] = "Strawberry Elephant",
+
+    ["Tigroligre Frutonni"] = "Skibidi Toilet",
+    ["Orcalero Orcala"] = "Skibidi Toilet",
+    ["Mastodontico Telepiedone"] = "Meowl",
+    ["Bulbito Bandito Traktorito"] = "Meowl",
+    ["Pop Pop Sahur"] = "Strawberry Elephant"
 }
 
--- 🔥 MODELS FIABLES
 local ANIMALS = RS:WaitForChild("Models"):WaitForChild("Animals")
 
 local function getModel(name)
     return ANIMALS:FindFirstChild(name)
 end
 
+-- =========================
 -- 🔥 HIDE ORIGINAL
+-- =========================
+
 local function hideOriginal(v)
     for _, obj in ipairs(v:GetDescendants()) do
         if obj:IsA("BasePart") then
             obj.Transparency = 1
+            obj.CanCollide = false
         elseif obj:IsA("Decal") or obj:IsA("Texture") then
             obj.Transparency = 1
         elseif obj:IsA("BillboardGui") then
@@ -40,7 +52,10 @@ local function hideOriginal(v)
     end
 end
 
--- 🔥 MONDE
+-- =========================
+-- 🔥 REMPLACEMENT AVEC FIX LUCKY BLOCK
+-- =========================
+
 local active = {}
 
 local function apply(v)
@@ -75,6 +90,13 @@ local function apply(v)
                     return
                 end
 
+                -- 🔥 FIX : si le modèle devient trop petit → delete clone
+                if v.PrimaryPart and v.PrimaryPart.Size.Magnitude < 1 then
+                    fake:Destroy()
+                    active[v] = nil
+                    return
+                end
+
                 hideOriginal(v)
 
                 if v.PrimaryPart and fake.PrimaryPart then
@@ -94,12 +116,18 @@ end
 workspace.DescendantAdded:Connect(apply)
 
 -- =========================
--- 🔥 TEXTE + OG EFFECT
+-- 💰 TEXTE + NOM PERMANENT
 -- =========================
 
-local function processText(text)
+local function process(text)
+    if not text then return text end
+
     text = text:gsub("Mythic", "OG")
     text = text:gsub("Secret", "OG")
+    text = text:gsub("Brainrot God", "OG")
+
+    text = text:gsub("%$2%.5M", "$1T")
+    text = text:gsub("%$500M", "$1T")
 
     for original, newName in pairs(REPLACEMENTS) do
         text = text:gsub(original, newName)
@@ -108,98 +136,69 @@ local function processText(text)
     return text
 end
 
-local function addOGEffect(label)
-    if not label:IsA("TextLabel") then return end
+-- =========================
+-- ✨ OG EFFET FIX (JAUNE VISIBLE)
+-- =========================
+
+local function addEffect(label)
     if label.Text ~= "OG" then return end
-    if label:FindFirstChild("OG_GRADIENT") then return end
+    if label:FindFirstChild("FX") then return end
 
-    label.TextColor3 = Color3.fromRGB(255,215,0)
+    local g = Instance.new("UIGradient")
+    g.Name = "FX"
 
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.new(0,0,0)
-    stroke.Thickness = 1.5
-    stroke.Parent = label
-
-    local gradient = Instance.new("UIGradient")
-    gradient.Name = "OG_GRADIENT"
-
-    gradient.Color = ColorSequence.new({
-        ColorSequenceKeypoint.new(0, Color3.fromRGB(255,215,0)),
-        ColorSequenceKeypoint.new(0.48, Color3.fromRGB(255,215,0)),
+    g.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(255,200,0)),
         ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0,0,0)),
-        ColorSequenceKeypoint.new(0.52, Color3.fromRGB(255,215,0)),
-        ColorSequenceKeypoint.new(1, Color3.fromRGB(255,215,0)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(255,200,0))
     })
 
-    gradient.Offset = Vector2.new(0, -1)
-    gradient.Parent = label
+    g.Rotation = 90
+    g.Parent = label
 
     task.spawn(function()
-        while gradient.Parent do
-            gradient.Offset = Vector2.new(0, -1)
+        while g.Parent do
+            g.Offset = Vector2.new(0,-1)
 
-            local tween = TweenService:Create(
-                gradient,
-                TweenInfo.new(3, Enum.EasingStyle.Linear),
-                {Offset = Vector2.new(0, 1)}
-            )
-
-            tween:Play()
-            tween.Completed:Wait()
+            TweenService:Create(
+                g,
+                TweenInfo.new(2, Enum.EasingStyle.Linear),
+                {Offset = Vector2.new(0,1)}
+            ):Play()
 
             task.wait(2)
         end
     end)
 end
 
-local function fix(obj)
-    if obj:IsA("TextLabel") or obj:IsA("TextButton") then
-        obj.Text = processText(obj.Text)
-        addOGEffect(obj)
+-- =========================
+-- 🔥 HOOK PERMANENT
+-- =========================
+
+local function hook(v)
+    if not (v:IsA("TextLabel") or v:IsA("TextButton")) then return end
+    if v:FindFirstChild("LOCK") then return end
+
+    Instance.new("BoolValue", v).Name = "LOCK"
+
+    local function update()
+        local new = process(v.Text)
+        if v.Text ~= new then
+            v.Text = new
+        end
+
+        addEffect(v)
     end
 
-    if obj:IsA("BillboardGui") then
-        for _, v in ipairs(obj:GetDescendants()) do
-            if v:IsA("TextLabel") then
-                v.Text = processText(v.Text)
-                addOGEffect(v)
-            end
-        end
-    end
+    update()
+    v:GetPropertyChangedSignal("Text"):Connect(update)
 end
 
 for _, v in ipairs(game:GetDescendants()) do
-    fix(v)
+    hook(v)
 end
 
 game.DescendantAdded:Connect(function(v)
-    fix(v)
-end)
-
--- =========================
--- 🔥 INDEX + SHOP (SANS FREEZE)
--- =========================
-
-game.DescendantAdded:Connect(function(v)
-    if v:IsA("ViewportFrame") then
-        task.wait(0.2)
-
-        local world = v:FindFirstChildOfClass("WorldModel")
-        if not world then return end
-
-        local model = world:FindFirstChildOfClass("Model")
-        if not model then return end
-
-        for original, newName in pairs(REPLACEMENTS) do
-            if string.find(model.Name, original) then
-                
-                local source = getModel(newName)
-                if not source then return end
-
-                world:ClearAllChildren()
-                source:Clone().Parent = world
-                break
-            end
-        end
-    end
+    task.wait()
+    hook(v)
 end)
